@@ -1,14 +1,14 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
-#include "sqlite3.h"
+#include <sqlite3.h>
 #include <fstream>
 
 
 using namespace std;
 
     	   
-string cifrarCesar(const string& frase) {
+string cifrar(const string& frase) {
     string cifrada = "";
     int desplazamiento = 23;
 
@@ -28,7 +28,7 @@ string cifrarCesar(const string& frase) {
     return cifrada;
 }
 
-string descifrarCesar(const string& fraseCifrada) {
+string descifrar(const string& fraseCifrada) {
     string descifrada = "";
     int desplazamiento = 23;
 
@@ -48,19 +48,6 @@ string descifrarCesar(const string& fraseCifrada) {
     return descifrada;
 }
 
-int viewPassword (){
-	int option;
-	int key = 23;
-	
-	//const char* siteRequest = sqlite3.exec();
-	
-	// TODO: Get Sites
-	cout<<"Seleccione un Sitio para ver la contraseña: ";
-	cin>>option; 
-	return 0;
-}
-
-
 
 int main(){
     sqlite3* db;
@@ -75,9 +62,18 @@ int main(){
         string DBpassRAW;
         cout<<"Ingrese una contraseña para la base de datos: ";
         cin>>DBpassRAW;
-        //createTable = sqlite3.execute(db, "CREATE TABLE Passwords (_db_password TEXT NOT NULL, user TEXT NOT NULL, site TEXT NOT NULL, pass TEXT NOT NULL);", 
-										//callback, 0, &errMsg);
-										
+        
+        const char* sql_1 = "CREATE TABLE Passwords (_db_password TEXT NOT NULL, user TEXT NOT NULL DEFAULT [No Set], site TEXT NOT NULL DEFAULT [No Set], pass TEXT NOT NULL DEFAULT [No Set])";
+
+		char* errMsg;
+        rc = sqlite3_exec(db, sql_1, 0, 0, &errMsg);
+        if (rc != SQLITE_OK) {
+            // Manejo de error en caso de que no se pueda crear la tabla
+            fprintf(stderr, "Error SQL: %s\n", errMsg);
+            sqlite3_free(errMsg);
+            sqlite3_close(db);
+            return 1;
+        }							
     }
 
 
@@ -112,11 +108,18 @@ int main(){
 	            cout<<"Ingrese el Usuario: "; cin.getline(user, 100);
 	            cout<<"Ingrese el Sitio: "; cin.getline(site, 100);
                 cout<<"Ingrese la Contraseña: "; cin.getline(pass,100);
-                int i, j, length,key;
-                key = 23;
+                int i, j, length;
                 length = strlen(pass);
             break;
-            case 2: viewPassword();
+            case 2: 
+            	int option;
+                
+                //const char* siteRequest = sqlite3.exec();
+                
+                // TODO: Get Sites
+                cout<<"Seleccione un Sitio para ver la contraseña: ";
+                cin>>option; 
+                return 0;
             break;
             case 3: return 0;
             break;
