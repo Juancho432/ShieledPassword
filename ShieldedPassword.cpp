@@ -7,34 +7,6 @@
 
 using namespace std;
 
-
-int callback(void* NotUsed, int argc, char** argv, char** azColName){
-    for (int i = 0; i < argc; i++){
-        cout<<azColName[i] <<": " << (argv[i] ? argv[i] : "NULL") << endl;
-    }
-    return 0;
-}
-
-string cifrar(const string& frase) {
-    string cifrada = "";
-    int desplazamiento = 23;
-
-    for (char caracter : frase) {
-        if (isalpha(caracter)) {
-            // Obtiene el rango de valores de 'a' o 'A' según sea minúscula o mayúscula
-            char inicio = islower(caracter) ? 'a' : 'A';
-            // Aplica el desplazamiento, asegurándose de mantenerse dentro del rango de letras
-            char cifrado = (caracter - inicio + desplazamiento) % 26 + inicio;
-            cifrada += cifrado;
-        } else {
-            // Mantener los caracteres que no son letras sin cambios
-            cifrada += caracter;
-        }
-    }
-
-    return cifrada;
-}
-
 string descifrar(const string& fraseCifrada) {
     string descifrada = "";
     int desplazamiento = 23;
@@ -55,6 +27,43 @@ string descifrar(const string& fraseCifrada) {
     return descifrada;
 }
 
+
+int callbackPass(void* NotUsed, int argc, char** argv, char** azColName){
+    for (int i = 0; i < argc; i++){
+        string salidaCifrada = azColName[i] + *": " + *(argv[i] ? argv[i] : "NULL");
+        string salida = descifrar(salidaCifrada);
+        cout<<salida<<endl;
+    }
+    return 0;
+}
+
+int callbackUser(void* NotUsed, int argc, char** argv, char** azColName){
+    for (int i = 0; i < argc; i++){
+        cout<<azColName[i] <<": " << (argv[i] ? argv[i] : "NULL") << endl;
+    }
+    return 0;
+}
+
+string cifrar(const string& frase) {
+    cout<<"Cifrando...";
+    string cifrada = "";
+    int desplazamiento = 23;
+
+    for (char caracter : frase) {
+        if (isalpha(caracter)) {
+            // Obtiene el rango de valores de 'a' o 'A' según sea minúscula o mayúscula
+            char inicio = islower(caracter) ? 'a' : 'A';
+            // Aplica el desplazamiento, asegurándose de mantenerse dentro del rango de letras
+            char cifrado = (caracter - inicio + desplazamiento) % 26 + inicio;
+            cifrada += cifrado;
+        } else {
+            // Mantener los caracteres que no son letras sin cambios
+            cifrada += caracter;
+        }
+    }
+    return cifrada;
+}
+
 int newPassword(sqlite3* db, int rc){
     string passRAW, user, site;
 	cout<<"Ingrese el Usuario: "; 
@@ -65,12 +74,10 @@ int newPassword(sqlite3* db, int rc){
     cin>>passRAW;
                 
     string passCifrada = cifrar(passRAW);
-    string setUser = "UPDATE Passwords SET user = '" + user + "';";
-    string setSite = "UPDATE Passwords SET site = '" + site + "';";
-    string setPass = "UPDATE Passwords SET pass = '" + passCifrada + "';";
+    string savePass = "INSERT INTO Passwords(user, site, pass) VALUES('"+user+"','"+site+"','"+passCifrada+"');" ;
 
     cout<<"Contraseña guardada!!"<<endl;
-    rc = sqlite3_exec(db, setUser.c_str(), 0, 0, 0);
+    rc = sqlite3_exec(db, savePass.c_str(), 0, 0, 0);
     return 0;
 }
 
@@ -82,18 +89,32 @@ int viewPasswords(sqlite3* db, int rc){
     
     while (sqlite3_step(stmt)== SQLITE_ROW){
         const char *valor = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-        cout<< valor <<endl;
+        cout<< "O "<<valor <<endl;
     }
+    sqlite3_finalize(stmt);
 
     string option;
     cout<<"Ingrese el sitio de la contraseña: ";
     cin>>option;
 
-    string resultSQL = "SELECT user, pass FROM Passwords WHERE site = '" + option + "';";
+    string userSQL = "SELECT user FROM Passwords WHERE site = '" + option + "';";
     char* zErrMsg;
-    rc = sqlite3_exec(db, resultSQL.c_str(), callback, 0, &zErrMsg);
+    rc = sqlite3_exec(db, userSQL.c_str(), callbackUser, 0, &zErrMsg);
 
+    const char *sqlPass = "SELECT pass FROM Passwords WHERE site = ?;";
+    sqlite3_stmt *stmt2;
+    rc = sqlite3_prepare_v2(db, sqlPass, -1, &stmt2, nullptr);
 
+    rc = sqlite3_bind_text(stmt2, 1, option.c_str(), -1, SQLITE_STATIC);
+    while (sqlite3_step(stmt2)== SQLITE_ROW){
+        const unsigned char* valor = sqlite3_column_text(stmt2, 0);
+        string buffer(reinterpret_cast<const char*>(valor));
+        string pass = descifrar(buffer);
+        cout<< "Pass: "<< pass <<endl;
+    }
+    sqlite3_finalize(stmt2);
+
+    
     return 0;
 
 }
@@ -114,7 +135,7 @@ int main(){
         
         rc = sqlite3_open("Passwords.db", &db);
         cout<<"Configurando Base de Datos...."<<endl;
-        const char* sql_1 = "CREATE TABLE Passwords (user TEXT NOT NULL, site TEXT NOT NULL, pass TEXT NOT NULL)";
+        const char* sql_1 = "CREATE TABLE Passwords (user TEXT, site TEXT, pass TEXT);";
         
 		char* errMsg;
         rc = sqlite3_exec(db, sql_1, 0, 0, &errMsg);
