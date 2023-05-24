@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sqlite3.h>
 #include <fstream>
@@ -27,7 +28,6 @@ string descifrar(const string& fraseCifrada) {
     return descifrada;
 }
 
-
 int callbackPass(void* NotUsed, int argc, char** argv, char** azColName){
     for (int i = 0; i < argc; i++){
         string salidaCifrada = azColName[i] + *": " + *(argv[i] ? argv[i] : "NULL");
@@ -45,7 +45,7 @@ int callbackUser(void* NotUsed, int argc, char** argv, char** azColName){
 }
 
 string cifrar(const string& frase) {
-    cout<<"Cifrando...";
+    cout<<"\033[1;33mCifrando..."<<endl;
     string cifrada = "";
     int desplazamiento = 23;
 
@@ -76,7 +76,7 @@ int newPassword(sqlite3* db, int rc){
     string passCifrada = cifrar(passRAW);
     string savePass = "INSERT INTO Passwords(user, site, pass) VALUES('"+user+"','"+site+"','"+passCifrada+"');" ;
 
-    cout<<"Contraseña guardada!!"<<endl;
+    cout<<"\033[1;32mContraseña guardada!!"<<endl;
     rc = sqlite3_exec(db, savePass.c_str(), 0, 0, 0);
     return 0;
 }
@@ -94,7 +94,7 @@ int viewPasswords(sqlite3* db, int rc){
     sqlite3_finalize(stmt);
 
     string option;
-    cout<<"Ingrese el sitio de la contraseña: ";
+    cout<<"Ingrese el nombre del sitio: ";
     cin>>option;
 
     string userSQL = "SELECT user FROM Passwords WHERE site = '" + option + "';";
@@ -128,13 +128,13 @@ int main(){
     if (database){
         rc = sqlite3_open("Passwords.db", &db);
     }else{
-        cout<<"Creando Base de Datos..."<<endl;
+        cout<<"\033[1;33mCreando Base de Datos..."<<endl;
         ofstream file;
         file.open("Passwords.db");
         file.close();
         
         rc = sqlite3_open("Passwords.db", &db);
-        cout<<"Configurando Base de Datos...."<<endl;
+        cout<<"\033[1;33mConfigurando Base de Datos...."<<endl;
         const char* sql_1 = "CREATE TABLE Passwords (user TEXT, site TEXT, pass TEXT);";
         
 		char* errMsg;
@@ -149,18 +149,16 @@ int main(){
     }
     
     init:
-
-        cout<<"-----------------------------------------------------------------------"<<endl;
+        cout<<"";
+        cout<<"\033[1;37m-----------------------------------------------------------------------"<<endl;
         cout<<"Seleccione una opcion del menu: \n"
                 "   [1] Ingresar nueva contrasena \n"
                 "   [2] Ver contrasenas almacenadas \n"
                 "   [3] Salir \n";
 
-               
         int option;
         numErr: 
         cin>>option;
-        
 
         if(option == 1 or option == 2 or option == 3)
         {
@@ -176,13 +174,13 @@ int main(){
                 break;
             case 3: 
                 sqlite3_close(db);
-                cout<<"[X] Saliendo...";
+                cout<<"\033[1;31m[X] Saliendo...";
                 return 0;
                 break;
         	}
             
         }else{
-            cout<<"[X] Ingrese un numero valido!! \n";
+            system("Color 04");cout<<"[X] Ingrese un numero valido!! \n";
             goto numErr;
         }   
     
