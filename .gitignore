@@ -1,4 +1,4 @@
 .vscode
 pruebas.cpp
 pruebas.exe
-ShieldedPassword.exe
+*.exe
